@@ -2,6 +2,10 @@ package hex
 
 import "errors"
 
+const (
+	chars = "0123456789abcdef"
+)
+
 // Normally we'd use the built in hex package but since the goal of this
 // project is learning crypto fundamentals wanted to write my own
 func Decode(s string) ([]byte, error) {
@@ -33,4 +37,17 @@ func runeToByte(r rune) (byte, error) {
 		return byte(r-'a') + 10, nil
 	}
 	return 0, errors.New("rune must be one of 0123456789abcdef")
+}
+
+func byteToString(b byte) string {
+	upper := b >> 4
+	lower := b & 0xf
+	return chars[upper:upper+1] + chars[lower:lower+1]
+}
+
+func Encode(ba []byte) (result string) {
+	for _, b := range ba {
+		result += byteToString(b)
+	}
+	return
 }

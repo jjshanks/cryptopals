@@ -29,3 +29,21 @@ func TestDecode(t *testing.T) {
 		}
 	}
 }
+
+func TestEncode(t *testing.T) {
+	tests := []struct {
+		input    []byte
+		expected string
+		name     string
+	}{
+		{[]byte{}, "", "blank"},
+		{[]byte{0}, "00", "zero"},
+		{[]byte{255}, "ff", "short full"},
+		{[]byte{0x8a, 0xf2}, "8af2", "long"},
+	}
+
+	for _, tc := range tests {
+		actual := Encode(tc.input)
+		assert.Equal(t, tc.expected, actual, tc.name)
+	}
+}
