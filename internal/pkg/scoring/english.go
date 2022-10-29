@@ -1,8 +1,6 @@
 package scoring
 
 import (
-	"math"
-	"regexp"
 	"strings"
 )
 
@@ -34,40 +32,26 @@ var (
 		'x': 0.15,
 		'y': 2,
 		'z': 0.074,
+		' ': 10, // not actual freq
 	}
-
-	// uncommon but expected so ignore
-	skips = regexp.MustCompile(`^[ .?,!'"0-9]$`)
-	// rare but possible, treat as anomaly
-	lows         = regexp.MustCompile(`^[@#$%^&*()_+=<>/\;-|]$`)
-	anomalyScore = 100.0
 )
 
-// EnglishScore returns a score representing how close to
-// the expected frequency of english characters was observed.
-// The closer to zero the better frequency match.
+// EnglishScore returns a score representing how likely
+// the input is to be english. Higher scores mean it is
+// more likely
 func EnglishScore(input string) float64 {
 	input = strings.ToLower(input)
-	counts := make(map[rune]float64)
-	for _, r := range input {
-		counts[r] += 1
-	}
 	total := 0.0
-	for k, v := range counts {
-		if _, ok := freq[k]; !ok {
-			if skips.Match([]byte{byte(k)}) {
-				continue
-			}
-			if lows.Match([]byte{byte(k)}) {
-				total += anomalyScore / 100
-				continue
-			}
-			total += anomalyScore
-			continue
+	for _, r := range input {
+		// penalize controls and extended ascii
+		if r < ' ' || r > '~' {
+			total -= 100.0
 		}
-		ratio := (v / float64(len(input)) * 100)
-		drift := math.Abs(freq[k] - ratio)
-		total += drift
+		// penalize unlikely characters
+		if r >= '!' && r <= '&' || r >= '{' {
+			total -= 20.0
+		}
+		total += freq[r]
 	}
 	return total
 }
