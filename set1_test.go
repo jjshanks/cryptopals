@@ -80,3 +80,11 @@ func TestChallenge5(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expected, actual)
 }
+
+func TestChallenge6(t *testing.T) {
+	file, err := os.Open("data/challenge4.txt")
+	require.NoError(t, err)
+	defer file.Close()
+	bestKeySize, err := cryptanalysis.RepeatingXORKeySize(file, 2, 40)
+	assert.Equal(t, 7, bestKeySize)
+}

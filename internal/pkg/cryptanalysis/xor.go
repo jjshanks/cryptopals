@@ -2,6 +2,7 @@ package cryptanalysis
 
 import (
 	xbytes "bytes"
+	"io"
 
 	"github.com/jjshanks/cryptopals/internal/pkg/bitwise"
 	"github.com/jjshanks/cryptopals/internal/pkg/bytes"
@@ -33,4 +34,37 @@ type XORCryptanalysisSolution struct {
 	Text  string
 	Score float64
 	Key   byte
+}
+
+type SeekableReader interface {
+	Read([]byte) (int, error)
+	Seek(int64, int) (int64, error)
+}
+
+func RepeatingXORKeySize(input SeekableReader, min, max int) (int, error) {
+	bestNorm := float64(1 << 31)
+	bestKeySize := max + 1
+	for i := min; i <= max; i += 1 {
+		first := make([]byte, i)
+		second := make([]byte, i)
+		_, err := io.ReadFull(input, first)
+		if err != nil {
+			return 0, err
+		}
+		_, err = io.ReadFull(input, second)
+		if err != nil {
+			return 0, err
+		}
+		actual, err := bytes.HammingDistance(first, second)
+		if err != nil {
+			return 0, err
+		}
+		norm := float64(actual) / float64(i)
+		if norm < bestNorm {
+			bestNorm = norm
+			bestKeySize = i
+		}
+		input.Seek(0, 0)
+	}
+	return bestKeySize, nil
 }
