@@ -3,6 +3,7 @@ package cryptanalysis
 import (
 	xbytes "bytes"
 	"io"
+	"sort"
 
 	"github.com/jjshanks/cryptopals/internal/pkg/bitwise"
 	"github.com/jjshanks/cryptopals/internal/pkg/bytes"
@@ -41,30 +42,41 @@ type SeekableReader interface {
 	Seek(int64, int) (int64, error)
 }
 
-func RepeatingXORKeySize(input SeekableReader, min, max int) (int, error) {
-	bestNorm := float64(1 << 31)
-	bestKeySize := max + 1
+func RepeatingXORKeySize(input SeekableReader, min, max, candidateCount int) ([]int, error) {
+	candidates := make([]keySizeResult, 0)
 	for i := min; i <= max; i += 1 {
 		first := make([]byte, i)
 		second := make([]byte, i)
 		_, err := io.ReadFull(input, first)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 		_, err = io.ReadFull(input, second)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 		actual, err := bytes.HammingDistance(first, second)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 		norm := float64(actual) / float64(i)
-		if norm < bestNorm {
-			bestNorm = norm
-			bestKeySize = i
-		}
+		candidates = append(candidates, keySizeResult{
+			score: norm,
+			size:  i,
+		})
 		input.Seek(0, 0)
 	}
-	return bestKeySize, nil
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].score < candidates[j].score
+	})
+	result := make([]int, candidateCount)
+	for i := 0; i < candidateCount; i += 1 {
+		result[i] = candidates[i].size
+	}
+	return result, nil
+}
+
+type keySizeResult struct {
+	score float64
+	size  int
 }

@@ -85,6 +85,6 @@ func TestChallenge6(t *testing.T) {
 	file, err := os.Open("data/challenge4.txt")
 	require.NoError(t, err)
 	defer file.Close()
-	bestKeySize, err := cryptanalysis.RepeatingXORKeySize(file, 2, 40)
-	assert.Equal(t, 7, bestKeySize)
+	bestKeySize, err := cryptanalysis.RepeatingXORKeySize(file, 2, 40, 1)
+	assert.Equal(t, []int{7}, bestKeySize)
 }
