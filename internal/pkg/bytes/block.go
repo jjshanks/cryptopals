@@ -20,3 +20,16 @@ func Chunk(input []byte, chunkSize int) ([][]byte, error) {
 	}
 	return result, nil
 }
+
+func Transpose(input [][]byte) ([][]byte, error) {
+	if len(input) == 0 || len(input[0]) == 0 {
+		return nil, errors.New("input can not be empty")
+	}
+	result := make([][]byte, len(input[0]))
+	for _, chunk := range input {
+		for idx, b := range chunk {
+			result[idx] = append(result[idx], b)
+		}
+	}
+	return result, nil
+}
