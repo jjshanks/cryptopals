@@ -22,3 +22,29 @@ func TestEncode(t *testing.T) {
 		assert.Equal(t, test.output, Encode(test.input), test.name)
 	}
 }
+
+func TestDecode(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		output      []byte
+		errExpected bool
+	}{
+		{"simple", "ABCD", []byte{0x0, 0x10, 0x83}, false},
+		{"padding", "R29vZA==", []byte{71, 111, 111, 100}, false},
+		{"padding2", "SGVsbG8=", []byte{72, 101, 108, 108, 111}, false},
+		{"bad char", "abc&", nil, true},
+		{"bad length", "a", nil, true},
+	}
+
+	for _, test := range tests {
+		actual, err := Decode(test.input)
+		if test.errExpected {
+			assert.Error(t, err, test.name)
+		} else {
+			assert.NoError(t, err, test.name)
+			assert.Equal(t, test.output, actual, test.name)
+		}
+
+	}
+}
