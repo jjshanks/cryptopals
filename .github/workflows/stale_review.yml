@@ -1,0 +1,70 @@
+name: Maintain Pull Request Reviews
+
+on:
+  pull_request_target:
+    types:
+      - synchronize # When PR branch is updated
+      - base_changed # When base branch is changed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-and-maintain-reviews:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Check if diff has changed
+        id: check-diff
+        run: |
+          # Get the before and after SHAs
+          before_sha="${{ github.event.before }}"
+          after_sha="${{ github.event.after }}"
+          
+          # If base branch changed, compare old base with new base
+          if [[ "${{ github.event.action }}" == "base_changed" ]]; then
+            old_base="${{ github.event.changes.base.ref.from }}"
+            new_base="${{ github.event.pull_request.base.ref }}"
+            
+            # Get diff between old and new base
+            diff_output=$(git diff "origin/$old_base" "origin/$new_base" -- . ':(exclude).github/workflows/*')
+          else
+            # Get diff for code changes
+            diff_output=$(git diff "$before_sha" "$after_sha" -- . ':(exclude).github/workflows/*') 
+          fi
+          
+          # Check if there are actual code changes
+          if [[ -n "$diff_output" ]]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Maintain reviews if no changes
+        if: steps.check-diff.outputs.has_changes == 'false'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Get existing reviews
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            
+            // Don't dismiss reviews if only the base changed and there are no code changes
+            if (reviews.data.length > 0) {
+              console.log('Maintaining existing reviews as diff has not changed');
+              
+              await github.rest.pulls.updateReviewDismissal({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                maintain_reviews: true
+              });
+            }
