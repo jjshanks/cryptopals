@@ -7,7 +7,6 @@ All challenges are in test files in the root directory, you can run them with
 ```
 > go test .
 ```
-
 Alternatively you can run all tests with (suggested)
 
 ```
